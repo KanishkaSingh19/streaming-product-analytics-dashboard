@@ -292,16 +292,16 @@ Analyzes customer retention and churn behavior.
 ## Project Screenshots
 
 ### Executive Overview Dashboard
-(Add Screenshot)
+<img src="executive_dashboard.png" width="1000">
 
 ### User Analytics Dashboard
-(Add Screenshot)
+<img src="user_analytics.png" width="1000">
 
 ### Content Analytics Dashboard
-(Add Screenshot)
+<img src="content_analytics.png" width="1000">
 
 ### Growth & Retention Analytics Dashboard
-(Add Screenshot)
+<img src="Growth_&_retention_analytics.png" width="1000">
 
 ---
 
