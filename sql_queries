@@ -1,0 +1,170 @@
+------------------------------------------
+--BASIC SQL QUERIES
+------------------------------------------
+
+--1. How many users are on the platform?
+SELECT COUNT(*) AS total_users
+FROM users;
+
+--2. Which subscription plan is most popular?
+SELECT
+    subscription_type,
+    COUNT(*) AS users
+FROM users
+GROUP BY subscription_type;
+
+--3. How engaged are users overall?
+SELECT
+    ROUND(AVG(watch_time_hours),2) AS avg_watch_time
+FROM users;
+
+--4. Which genres have the largest content library?
+SELECT
+    genre,
+    COUNT(*) AS titles
+FROM content
+GROUP BY genre
+ORDER BY titles DESC;
+
+--5. What is the average user rating on the platform?
+SELECT
+    ROUND(AVG(rating),2) AS avg_rating
+FROM ratings;
+
+------------------------------------------
+--INTERMEDIATE SQL QUERIES
+------------------------------------------
+
+--1. Which content genres generate the highest user engagement and should receive greater investment in content production and promotion?
+SELECT
+    c.genre,
+    COUNT(*) AS total_views
+FROM watch_history w
+JOIN content c
+ON w.content_id = c.content_id
+GROUP BY c.genre
+ORDER BY total_views DESC;
+
+--2. Which movies or shows drive the highest platform engagement and contribute most to user activity?
+SELECT
+    c.title,
+    COUNT(*) AS views
+FROM watch_history w
+JOIN content c
+ON w.content_id = c.content_id
+GROUP BY c.title
+ORDER BY views DESC
+LIMIT 10;
+
+--3. Which subscription plans have the highest user churn, and where should retention efforts be focused?
+SELECT
+    subscription_type,
+    ROUND(AVG(churn)*100,2) AS churn_rate
+FROM users
+GROUP BY subscription_type;
+
+--4. Which genres keep viewers engaged until the end of the content?
+SELECT
+    c.genre,
+    ROUND(AVG(w.completion_rate),2) AS avg_completion
+FROM watch_history w
+JOIN content c
+ON w.content_id = c.content_id
+GROUP BY c.genre
+ORDER BY avg_completion DESC;
+
+-- 5. Which genres receive the strongest audience satisfaction and positive feedback?
+SELECT
+    c.genre,
+    ROUND(AVG(r.rating),2) AS avg_rating
+FROM ratings r
+JOIN content c
+ON r.content_id = c.content_id
+GROUP BY c.genre
+ORDER BY avg_rating DESC;
+
+--------------------------------------
+--ADVANCED SQL QUERIES
+--------------------------------------
+
+--1. How do content genres compare in terms of overall platform demand and consumption?
+SELECT
+    genre,
+    total_views,
+    RANK() OVER(
+        ORDER BY total_views DESC
+    ) AS genre_rank
+FROM
+(
+    SELECT
+        c.genre,
+        COUNT(*) AS total_views
+    FROM watch_history w
+    JOIN content c
+    ON w.content_id = c.content_id
+    GROUP BY c.genre
+) t;
+
+--2. Who are the most engaged users in each market and what characteristics define power users?
+SELECT *
+FROM
+(
+    SELECT
+        user_id,
+        country,
+        watch_time_hours,
+        ROW_NUMBER() OVER(
+            PARTITION BY country
+            ORDER BY watch_time_hours DESC
+        ) AS rn
+    FROM users
+) t
+WHERE rn = 1;
+
+--3. How is platform engagement changing over time, and are there seasonal patterns in user activity?
+SELECT
+    DATE_TRUNC('month',watch_date) AS month,
+    COUNT(*) AS sessions,
+    LAG(COUNT(*)) OVER(
+        ORDER BY DATE_TRUNC('month',watch_date)
+    ) AS prev_month
+FROM watch_history
+GROUP BY month
+ORDER BY month;
+
+--4. Which subscription plans perform better or worse than the overall platform churn benchmark?
+WITH overall AS
+(
+    SELECT AVG(churn) avg_churn
+    FROM users
+)
+
+SELECT
+    subscription_type,
+    ROUND(AVG(churn)*100,2) AS churn_rate,
+    ROUND(
+        (AVG(churn)-overall.avg_churn)*100,
+        2
+    ) AS difference
+FROM users
+CROSS JOIN overall
+GROUP BY subscription_type, overall.avg_churn;
+
+--5. Which titles are driving engagement within each content category?
+SELECT *
+FROM
+(
+    SELECT
+        c.genre,
+        c.title,
+        COUNT(*) AS views,
+        ROW_NUMBER() OVER(
+            PARTITION BY c.genre
+            ORDER BY COUNT(*) DESC
+        ) AS rn
+    FROM watch_history w
+    JOIN content c
+    ON w.content_id = c.content_id
+    GROUP BY c.genre,c.title
+) t
+WHERE rn <= 3;
